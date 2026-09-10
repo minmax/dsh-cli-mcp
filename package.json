@@ -28,7 +28,9 @@
     "test:live": "DSH_CLI_MCP_LIVE=1 vitest run --config ./vitest.config.ts test/dsh.test.ts",
     "test:watch": "vitest --typecheck",
     "dev": "tsc -p tsconfig.build.json --watch",
-    "prepublishOnly": "npm run clean && npm run build && npm run check"
+    "prepublishOnly": "npm run clean && npm run build && npm run check",
+    "build:tests": "tsc --module nodenext --moduleResolution nodenext --target ES2023 --lib ES2023 --types node --esModuleInterop true --skipLibCheck true --outDir dist-test test/fake-dsh.ts test/fake-dsh-cli.ts && (echo \"#!/usr/bin/env node\" | cat - dist-test/fake-dsh-cli.js > /tmp/_f && mv /tmp/_f dist-test/fake-dsh-cli.js) && chmod +x dist-test/fake-dsh-cli.js",
+    "clean:tests": "rm -rf dist-test"
   },
   "engines": {
     "node": ">=22"

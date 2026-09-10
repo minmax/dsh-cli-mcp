@@ -128,7 +128,7 @@ describe("Cancellation kill chain", () => {
     // We expect the run to abort within ~6s (200ms wait + 5s grace + a bit)
     let exitCode = 0;
     try {
-      const res = await runP;
+      await runP;
       exitCode = -1; // resolve path means killed (exitCode -1 from runner)
     } catch {
       // CliError or other failure — also acceptable
