@@ -1,0 +1,62 @@
+{
+  "name": "dsh-cli-mcp",
+  "publishConfig": {
+    "access": "public"
+  },
+  "version": "0.1.0",
+  "description": "MCP server that delegates coding tasks to your locally installed DeepSeek Harness CLI (dsh).",
+  "type": "module",
+  "bin": {
+    "dsh-cli-mcp": "dist/server.js"
+  },
+  "main": "dist/server.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && chmod +x dist/server.js",
+    "clean": "rm -rf dist",
+    "prepare": "npm run build",
+    "check": "npm run check:format && npm run check:types",
+    "check:format": "biome check .",
+    "check:types": "tsc --noEmit -p tsconfig.json",
+    "fix": "biome check --write .",
+    "lint": "biome check .",
+    "test": "vitest run --typecheck",
+    "test:live": "DSH_CLI_MCP_LIVE=1 vitest run --config ./vitest.config.ts test/dsh.test.ts",
+    "test:watch": "vitest --typecheck",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "prepublishOnly": "npm run clean && npm run build && npm run check"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "dsh",
+    "deepseek-harness",
+    "coding-agent",
+    "subagent",
+    "delegation"
+  ],
+  "author": "Karataev Pavel (https://github.com/minmax)",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.9",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minmax/dsh-cli-mcp.git"
+  },
+  "homepage": "https://github.com/minmax/dsh-cli-mcp#readme",
+  "bugs": "https://github.com/minmax/dsh-cli-mcp/issues"
+}
