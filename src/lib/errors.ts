@@ -1,73 +1,113 @@
-// Typed errors raised by the dsh-cli-mcp adapter. Tool handlers catch every
-// thrown error in the dispatcher and convert it into a `toolResult(text,
-// isError: true)` payload — see `server.ts` — so callers never see a raw
-// `Error` object. Keeping the type hierarchy small makes that conversion
-// boring.
+/**
+ * lib errors — типизированные ошибки, которые MCP-server возвращает хосту.
+ * Каждая ошибка мапится в isError=true text content + код.
+ */
 
-/** Base class. The discriminator is `name`, not a class identity check. */
-export class DshMcpError extends Error {
-  override readonly name: string;
+export class LibError extends Error {
+  public readonly code: string;
+  public readonly kind: "internal" | "protocol" | "tool" | "user";
+  public readonly context: Record<string, unknown> | undefined;
 
-  constructor(name: string, message: string) {
+  constructor(code: string, message: string, kind: LibError["kind"] = "tool", context?: Record<string, unknown>) {
     super(message);
-    this.name = name;
-  }
-}
-
-/** Caller passed an invalid argument — equivalent to a schema validation fail. */
-export class InvalidArgumentError extends DshMcpError {
-  constructor(message: string) {
-    super("InvalidArgument", message);
-  }
-}
-
-/** The `dsh` binary could not be found or could not be spawned. */
-export class BinaryNotFoundError extends DshMcpError {
-  constructor(message: string) {
-    super("BinaryNotFound", message);
-  }
-}
-
-/** The `dsh` process exited with a non-zero code. */
-export class DshExitError extends DshMcpError {
-  readonly code: number;
-
-  constructor(code: number, message: string) {
-    super("DshExit", message);
+    this.name = "LibError";
     this.code = code;
+    this.kind = kind;
+    this.context = context;
   }
 }
 
-/** The `dsh` process did not finish before the configured timeout. */
-export class DshTimeoutError extends DshMcpError {
-  readonly timeoutMs: number;
+export class SessionNotFoundError extends LibError {
+  constructor(sessionId: string) {
+    super("session_not_found", `Session ${sessionId} not found`, "tool", { sessionId });
+    this.name = "SessionNotFoundError";
+  }
+}
 
-  constructor(timeoutMs: number, message: string) {
-    super("DshTimeout", message);
-    this.timeoutMs = timeoutMs;
+export class SessionAlreadyExistsError extends LibError {
+  constructor(sessionId: string) {
+    super("session_already_exists", `Session ${sessionId} already exists`, "tool", { sessionId });
+    this.name = "SessionAlreadyExistsError";
+  }
+}
+
+export class ProcessSpawnError extends LibError {
+  constructor(binary: string, cause: unknown) {
+    super("process_spawn_failed", `Failed to spawn ${binary}: ${(cause as Error).message}`, "internal", {
+      binary,
+      cause: String(cause),
+    });
+    this.name = "ProcessSpawnError";
+  }
+}
+
+export class TimeoutError extends LibError {
+  constructor(ms: number, op: string) {
+    super("timeout", `Operation ${op} timed out after ${ms}ms`, "tool", { ms, op });
+    this.name = "TimeoutError";
+  }
+}
+
+export class CliError extends LibError {
+  public readonly exitCode: number | null;
+  public readonly stderr: string;
+  constructor(exitCode: number | null, stderr: string, op: string) {
+    super("cli_error", `CLI ${op} failed (exit ${exitCode}): ${stderr.split("\n")[0]?.slice(0, 200) ?? ""}`, "tool", {
+      exitCode,
+      stderr: stderr.slice(0, 2000),
+      op,
+    });
+    this.name = "CliError";
+    this.exitCode = exitCode;
+    this.stderr = stderr;
+  }
+}
+
+export class UnsupportedFeatureError extends LibError {
+  constructor(feature: string) {
+    super("unsupported_feature", `Feature ${feature} is not supported by this CLI`, "user", { feature });
+    this.name = "UnsupportedFeatureError";
+  }
+}
+
+export class InvalidArgumentError extends LibError {
+  constructor(argOrMessage: string, reason?: string) {
+    if (reason === undefined) {
+      super("invalid_argument", argOrMessage, "user");
+    } else {
+      super("invalid_argument", `Invalid ${argOrMessage}: ${reason}`, "user", { arg: argOrMessage, reason });
+    }
+    this.name = "InvalidArgumentError";
   }
 }
 
 /**
- * Format a `DshMcpError` chain (up to 5 frames) for the `toolResult` payload.
- * Only the message string is sent to the host — the stack trace stays in
- * `process.stderr` for the operator.
+ * Convert a caught error into a human-readable text for MCP tool result.
  */
 export function describeDshError(err: unknown): string {
-  const lines: string[] = [];
-  let current: unknown = err;
-  let depth = 0;
-  while (current !== null && current !== undefined && depth < 5) {
-    if (current instanceof Error) {
-      lines.push(`${depth === 0 ? "error" : "caused by"}: ${current.name}: ${current.message}`);
-      current = current.cause;
-      depth += 1;
-      continue;
-    }
-    lines.push(
-      `${depth === 0 ? "error" : "caused by"}: ${typeof current === "string" ? current : JSON.stringify(current)}`,
-    );
-    break;
+  if (err instanceof LibError) {
+    return `[${err.code}] ${err.message}`;
   }
-  return lines.join("\n");
+  const e = err as Error;
+  return `[internal_error] ${e?.message ?? String(err)}`;
+}
+
+// ============================================================================
+// Legacy aliases (for the v0.1.0 cli.ts wrapper that hasn't been refactored yet)
+// ============================================================================
+
+/** @deprecated use CliError */
+export class DshExitError extends LibError {
+  constructor(exitCode: number, message: string) {
+    super("cli_error", message, "tool", { exitCode });
+    this.name = "DshExitError";
+  }
+}
+
+/** @deprecated use TimeoutError */
+export class DshTimeoutError extends LibError {
+  constructor(ms: number, message: string) {
+    super("timeout", message, "tool", { ms });
+    this.name = "DshTimeoutError";
+  }
 }
