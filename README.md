@@ -26,7 +26,9 @@ mid-run control, transcript replay, and structured export.
 | `dsh_history` | T2 | Get the full transcript of a session |
 
 All 11 lib v1 features are implemented — see
-[FEATURES.md](docs/FEATURES.md) for the complete matrix.
+[docs/FEATURES.md](docs/FEATURES.md) for the complete matrix, and
+[docs/REVIEW.md](docs/REVIEW.md) for the self-audit (every claimed feature
+verified against the code).
 
 ## Install
 

@@ -2,7 +2,7 @@
 //
 // Helper tool (not in lib v1 explicitly, but useful for observability).
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { Lib } from "../lib/lib.js";
+import type { Lib } from "../lib/lib.js";
 import type { ToolDefinition } from "../types.js";
 
 const RUNNING_TOOL: ToolDefinition = {

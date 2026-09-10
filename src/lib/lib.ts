@@ -394,14 +394,20 @@ export class Lib implements LibV1 {
   }
 
   /** Прямой запуск CLI (для dsh tool). */
-  async invoke(args: readonly string[], opts?: { cwd?: string; timeoutMs?: number }): Promise<string> {
+  async invoke(
+    args: readonly string[],
+    opts?: { cwd?: string; timeoutMs?: number; signal?: AbortController },
+  ): Promise<string> {
     this.assertRunning();
     const release = await this.semaphore.acquire();
     try {
+      // Auto-inject --approval-mode so callers don't have to remember
+      const fullArgs = [...this.config.defaultArgs, ...args, "--approval-mode", this.currentApprovalMode];
       const res = await this.runner.run({
-        args: [...this.config.defaultArgs, ...args],
+        args: fullArgs,
         ...(opts?.cwd ? { cwd: opts.cwd } : {}),
         timeoutMs: opts?.timeoutMs ?? this.config.callTimeoutMs,
+        ...(opts?.signal ? { signal: opts.signal } : {}),
       });
       return res.stdout;
     } finally {

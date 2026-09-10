@@ -95,11 +95,17 @@ export class ProcessRunner {
 
       proc.on("close", (code, sig) => {
         cleanup();
-        if (killed) return;
         const stdout = opts.onStdoutChunk ? "" : Buffer.concat(chunks).toString("utf8");
         const stderr = Buffer.concat(errChunks).toString("utf8");
         const exitCode = code ?? (sig ? -1 : 0);
         const durationMs = Date.now() - start;
+        if (killed) {
+          // The caller requested cancellation or the run was killed by us
+          // (timeout / output-cap). Resolve with exitCode=-1 so the caller
+          // sees a clean shutdown rather than a hang.
+          resolve({ exitCode: -1, stdout, stderr, durationMs });
+          return;
+        }
         if (sig) {
           if (sig === "SIGTERM" || sig === "SIGKILL") {
             resolve({ exitCode: -1, stdout, stderr, durationMs });
