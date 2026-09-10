@@ -117,7 +117,15 @@ export class Lib implements LibV1 {
 
     try {
       // Resume: запускаем CLI с --session и --prompt
-      const args = [...this.config.defaultArgs, "--session", info.id, "--prompt", prompt];
+      const args = [
+        ...this.config.defaultArgs,
+        "--session",
+        info.id,
+        "--prompt",
+        prompt,
+        "--approval-mode",
+        this.currentApprovalMode,
+      ];
       const res = await this.runner.run({
         args,
         cwd: info.cwd,
@@ -362,6 +370,11 @@ export class Lib implements LibV1 {
   // ===========================================================================
   // Helpers (доступно для адаптеров)
   // ===========================================================================
+
+  /** Список активных run'ов (snapshot). */
+  listActiveRuns(): string[] {
+    return Array.from(this.activeRuns.keys());
+  }
 
   /** Создать новую сессию и сразу сделать первый прогон. */
   async newSession(opts: {

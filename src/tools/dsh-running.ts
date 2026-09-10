@@ -2,7 +2,7 @@
 //
 // Helper tool (not in lib v1 explicitly, but useful for observability).
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { Lib } from "../lib/lib.js";
+import { Lib } from "../lib/lib.js";
 import type { ToolDefinition } from "../types.js";
 
 const RUNNING_TOOL: ToolDefinition = {
@@ -28,15 +28,10 @@ export function buildRunningTool(): ToolDefinition {
 }
 
 export async function callDshRunning(lib: Lib): Promise<CallToolResult> {
-  // Access activeRuns via reflection — same as the existing pattern in lib.ts
-  const active = (lib as unknown as { activeRuns?: Map<string, AbortController> }).activeRuns;
-  if (!active) {
-    return { content: [{ type: "text", text: "No active runs (lib internals unavailable)." }] };
-  }
-  if (active.size === 0) {
+  const ids = lib.listActiveRuns();
+  if (ids.length === 0) {
     return { content: [{ type: "text", text: "No active runs." }] };
   }
-  const ids = Array.from(active.keys());
   const lines = [`${ids.length} active run(s):`];
   for (const id of ids) lines.push(`- ${id}`);
   return { content: [{ type: "text", text: lines.join("\n") }] };
