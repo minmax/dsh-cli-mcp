@@ -5,7 +5,8 @@ export default defineConfig({
     environment: "node",
     testTimeout: 30_000,
     hookTimeout: 30_000,
-    reporters: process.env.GITHUB_ACTIONS ? ["dot", "github-actions"] : ["default"],
+    globalSetup: ["./test/setup.ts"],
+    reporters: process.env["GITHUB_ACTIONS"] ? ["dot", "github-actions"] : ["default"],
     include: ["test/**/*.test.ts"],
     typecheck: {
       enabled: true,
